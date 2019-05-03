@@ -4,15 +4,20 @@ using System.Runtime.InteropServices;
 
 namespace TabCreator
 {
-    public partial class AddForm : Form
+    public partial class SetForm : Form
     {
         public int X { get; set; }
-        public AddForm()
+        public SetForm()
         {
             InitializeComponent();
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        private void btnOk_Click(object sender, EventArgs e)
+        {
+            AddAndClose();
+        }
+
+        private void AddAndClose()
         {
             X = (int)numericUpDown.Value;
             this.DialogResult = DialogResult.OK;
@@ -36,9 +41,20 @@ namespace TabCreator
             }
         }
 
-        private void FormAddX_Load(object sender, EventArgs e)
+        private void FormSetX_Load(object sender, EventArgs e)
         {
             this.Location = MousePosition;
+        }
+
+        private void numericUpDown_KeyDown(object sender, KeyEventArgs e)
+        {
+            switch (e.KeyCode)
+            {
+                case Keys.Return:
+                    AddAndClose();
+                    e.Handled = true;
+                    break;
+            }
         }
     }
 }

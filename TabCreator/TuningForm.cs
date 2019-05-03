@@ -12,7 +12,7 @@ namespace TabCreator
         public TuningForm(string[] tuning)
         {
             InitializeComponent();
-            _acceptedChars = "cdefgabhCDEFGABH#".ToCharArray();
+            _acceptedChars = "cdefgabhCDEFGABH# ".ToCharArray();
             _stringBoxes = new TextBox[] {
                 txtString1,
                 txtString2,
@@ -33,8 +33,11 @@ namespace TabCreator
         private void btnSave_Click(object sender, EventArgs e)
         {
             bool invalidTuning = _stringBoxes.Any(x =>
+                x.Text.Length < 1 ||
                 x.Text.Except(_acceptedChars).Count() > 0 ||
                 x.Text.Length > 2);
+            bool sharpOrFlat = _stringBoxes.Any(x =>
+                x.Text.Trim().Length == 2);
 
             if (invalidTuning)
             {
@@ -42,7 +45,13 @@ namespace TabCreator
             }
             else
             {
-                this.Tuning = _stringBoxes.Select(x => x.Text).ToArray();
+
+                this.Tuning = _stringBoxes.Select(x => x.Text.Trim(' ')).ToArray();
+                if (sharpOrFlat)
+                    for (int i = 0; i < 6; i++)
+                        if (this.Tuning[i].Length < 2)
+                            this.Tuning[i] += " ";
+
                 this.DialogResult = DialogResult.OK;
                 this.Close();
             }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
 using System.IO;
+using System.Drawing;
 
 namespace TabCreator
 {
@@ -10,13 +11,18 @@ namespace TabCreator
     {
         private Sheet _sheet;
         private string[] _tuning;
-        private TextBox[] _stringBoxes;
+        private ToolStripTextBox[] _stringBoxes;
         private TextBox[] _tabBoxes;
         private Dictionary<string, Sort> _toSortEnum;
         private Sort _currentSorting;
-        private AddForm _addXForm;
+        private SetForm _addXForm;
+        private SetForm _changeSpacing;
         private QueueSheetPanel _queueSheet;
         private string _currentNote;
+        private int _currentSpacing;
+        private string _filePath;
+        private int _argbValueOfInfoLabel;
+        private List<string> _history;
 
         public TabForm()
         {
@@ -26,26 +32,35 @@ namespace TabCreator
 
         private void InitializeMoreComponents()
         {
-            SheetPlaceHolder.Dispose();
+            MainMenuStrip.Items.Insert(2, new ToolStripSeparator());
+            MainMenuStrip.Items.Insert(5, new ToolStripSeparator());
             _queueSheet = new QueueSheetPanel();
-            _queueSheet.Location = new System.Drawing.Point(6, 233);
-            _queueSheet.BorderStyle = BorderStyle.FixedSingle;
-            _queueSheet.Anchor = ((AnchorStyles)(AnchorStyles.Bottom | AnchorStyles.Left));
+            _queueSheet.Location = SheetPlaceHolder.Location;
+            _queueSheet.Anchor = AnchorStyles.None;
             _queueSheet.CurrentNoteChanged += queueSheet_CurrentNoteChanged;
-            tabGenerateTab.Controls.Add(_queueSheet);
+            _queueSheet.MouseEnter += Queue_MouseEnter;
+            _queueSheet.MouseLeave += _queueSheet_MouseLeave;
+            SheetPlaceHolder.Dispose();
+            splitContainer4.Panel2.Controls.Add(_queueSheet);
 
+            _history = new List<string>();
             _tuning = new string[] { "e", "B", "G", "D", "A", "E" };
             _sheet = new Sheet(_tuning);
+            UpdateTab();
             _currentSorting = Sort.Octaves;
-            _addXForm = new AddForm();
-            _stringBoxes = new TextBox[] {
-                txtELowString,
-                txtBString,
-                txtGString,
-                txtDString,
-                txtAString,
-                txtEString
+            _addXForm = new SetForm();
+            _currentSpacing = 2;
+            _changeSpacing = new SetForm() { X = _currentSpacing };
+
+            _stringBoxes = new ToolStripTextBox[] {
+                toolStripELowString,
+                toolStripBString,
+                toolStripGString,
+                toolStripDString,
+                toolStripAString,
+                toolStripEString
             };
+
             _tabBoxes = new TextBox[] {
                 textBox1,
                 textBox2,
@@ -77,27 +92,28 @@ namespace TabCreator
             listNotes.SelectedItem = null;
         }
 
-        private void btnAdd_Click(object sender, EventArgs e)
-        {
-            AddToTab();
-        }
-
         private void AddToTab()
         {
-            _sheet.AddTab((int)numSpace.Value, ReadStringsAndFrets());
+            _sheet.AddTab(_currentSpacing, ReadStringsAndFrets());
             UpdateTab();
 
-            if (listNotes.SelectedItem == null && _queueSheet.NoteQueue.Any())
-                _queueSheet.DequeueNote();
+            DequeueFromQueue();
         }
 
         private void AddToTab(int numberOfEntries)
         {
-            _sheet.AddTab((int)numSpace.Value, numberOfEntries, ReadStringsAndFrets());
+            _sheet.AddTab(_currentSpacing, numberOfEntries, ReadStringsAndFrets());
             UpdateTab();
 
+            DequeueFromQueue();
+        }
+
+        private void DequeueFromQueue()
+        {
             if (listNotes.SelectedItem == null && _queueSheet.NoteQueue.Any())
                 _queueSheet.DequeueNote();
+
+            ResetTextBoxes();
         }
 
         private void UpdateTab()
@@ -119,7 +135,7 @@ namespace TabCreator
             return tabs.ToArray();
         }
 
-        private void btnReset_Click(object sender, EventArgs e)
+        private void ResetTextBoxes()
         {
             foreach (var item in _stringBoxes)
             {
@@ -149,25 +165,17 @@ namespace TabCreator
             UpdateTab();
         }
 
-        private void btnUndo_Click(object sender, EventArgs e)
+        private void BackspaceTab()
         {
-            Undo();
-        }
-
-        private void Undo()
-        {
-            _sheet.Undo();
+            _sheet.Backspace();
             UpdateTab();
         }
 
         private void listNotes_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if ((sender as ListBox).SelectedItem != null)
+            if ((sender as ComboBox).SelectedItem != null)
             {
-                tableLayoutPanel1.Enabled = true;
-                radioOctaves.Enabled = true;
-                radioFrets.Enabled = true;
-                radioStrings.Enabled = true;
+                EnableTabControls();
                 _currentNote = listNotes.SelectedItem.ToString();
                 LoadTabs(_currentSorting);
             }
@@ -185,7 +193,6 @@ namespace TabCreator
 
             int.TryParse(txtStartFret.Text, out minFret);
             int.TryParse(txtEndFret.Text, out maxFret);
-            tableLayoutPanel1.Enabled = true;
 
             foreach (var box in _tabBoxes.Reverse().Take(14 - generatedtabs.Count))
             {
@@ -216,7 +223,6 @@ namespace TabCreator
 
         private void EnableTabControls()
         {
-            tableLayoutPanel1.Enabled = true;
             radioOctaves.Enabled = true;
             radioFrets.Enabled = true;
             radioStrings.Enabled = true;
@@ -243,8 +249,6 @@ namespace TabCreator
                 else
                     _stringBoxes[i].Text = "-";
             }
-
-            btnAdd.Focus();
         }
 
         private void radioButton_CheckedChanged(object sender, EventArgs e)
@@ -254,60 +258,134 @@ namespace TabCreator
             LoadTabs(_toSortEnum[send.Text]);
         }
 
-        private void btnSave_Click(object sender, EventArgs e)
+        private void Save()
         {
-            PromptSave();
+            if (!File.Exists(_filePath))
+            {
+                SaveAs();
+            }
+            else
+            {
+                Save(_filePath);
+            }
         }
 
-        private void PromptSave()
+        private void Save(string path)
         {
-            if (DialogResult.OK == saveTabDialog.ShowDialog())
+            using (FileStream stream = new FileStream(path, FileMode.Create))
             {
-                using (FileStream stream = new FileStream(saveTabDialog.FileName, FileMode.OpenOrCreate))
+                using (StreamWriter writer = new StreamWriter(stream))
                 {
-                    using (StreamWriter writer = new StreamWriter(stream))
-                    {
-                        var sheet = _sheet.ToString();
-                        writer.Write(sheet);
-                    }
+                    var sheet = _sheet.ToString();
+                    writer.Write(sheet);
                 }
             }
         }
 
-        private void cItemCanvas_Click(object sender, EventArgs e)
+        private void SaveAs()
+        {
+            if (DialogResult.OK == saveTabDialog.ShowDialog())
+            {
+                Save(saveTabDialog.FileName);
+                _filePath = saveTabDialog.FileName;
+            }
+        }
+
+        private void contextMenuItem_Click(object sender, EventArgs e)
         {
             var send = sender as ToolStripItem;
             switch (send.Name)
             {
                 case "cItemClear":
+                case "cItemNew":
                     if (DialogResult.Yes == MessageBox.Show("This will erase all your tabs, are you sure?\r\n\nThis action is irreversable.", "Clear canvas?", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2))
                     {
                         _sheet = new Sheet(_tuning);
                         UpdateTab();
                     }
                     break;
-                case "cItemNewRow":
+                case "cItemRow":
+                case "cItemRow2":
                     AddNewRow();
                     break;
-                case "cItemAddSplitter":
+                case "cItemBarLine":
+                case "cItemBarLine2":
                     AddSplitter();
                     break;
-                case "cItemUndo":
-                    Undo();
+                case "cItemBack":
+                    BackspaceTab();
                     break;
                 case "cItemTuning":
+                case "cItemTuning2":
                     ChangeTuning();
                     break;
                 case "cItemSave":
-                    PromptSave();
-                    return;
+                case "cItemSave2":
+                    Save();
+                    break;
+                case "cItemSaveAs":
+                    SaveAs();
+                    break;
+                case "cItemExit":
+                    this.Close();
+                    break;
+                case "cItemSpacing":
+                    ChangeSpacing();
+                    break;
+                case "cItemEdit":
+                case "cItemEdit2":
+                    EditAsText();
+                    break;
+                case "cItemOpen":
+                    OpenFile();
+                    break;
+                case "cItemUndo":
+                case "cItemUndo2":
+                    _sheet.Undo();
+                    UpdateTab();
+                    break;
+            }
+        }
+
+        private void OpenFile()
+        {
+            if (DialogResult.OK == openFileDialog.ShowDialog())
+            {
+                try
+                {
+                    using (FileStream stream = new FileStream(openFileDialog.FileName, FileMode.Open))
+                    using (StreamReader reader = new StreamReader(stream))
+                        _sheet = new Sheet(reader.ReadToEnd());
+
+                    _filePath = openFileDialog.FileName;
+                    UpdateTab();
+                }
+                catch
+                {
+                    MessageBox.Show("The file you tried to open can't be converted to tabulature.", "Unable to convert.");
+                }
 
             }
         }
 
-        private void lblInfo_DoubleClick(object sender, EventArgs e)
+        private void EditAsText()
         {
-            ChangeTuning();
+            EditAsTextForm formTextEditor = new EditAsTextForm(txtTabSheet.Text);
+            if (DialogResult.OK == formTextEditor.ShowDialog())
+            {
+                _sheet = new Sheet(formTextEditor.Tabulature);
+                UpdateTab();
+            }
+        }
+
+        private void ChangeSpacing()
+        {
+            this.Enabled = false;
+            if (_changeSpacing.ShowDialog() == DialogResult.OK && _changeSpacing.X >= 0)
+            {
+                _currentSpacing = _changeSpacing.X;
+            }
+            this.Enabled = true;
         }
 
         private void ChangeTuning()
@@ -318,7 +396,9 @@ namespace TabCreator
             {
                 this._tuning = form.Tuning;
                 _sheet.Tuning = form.Tuning;
-                lblTuning.Text = String.Join("\r\n", form.Tuning);
+                _sheet.UpdateTuning();
+                txtTabSheet.Text = _sheet.ToString();
+                //lblTuning.Text = String.Join("\r\n", form.Tuning); TODO
             }
             this.Enabled = true;
         }
@@ -326,32 +406,41 @@ namespace TabCreator
         private void cItemAdd_Click(object sender, EventArgs e)
         {
             var send = sender as ToolStripItem;
-            var box = _tabBoxes.FirstOrDefault(x => (send.Owner as ContextMenuStrip).SourceControl == x);
-            int entries = 0;
 
-            if (box != null)
+            bool sourceIsTextBox = send.Owner is ContextMenuStrip;
+            TextBox box = null;
+            int entries = 0;
+            if (sourceIsTextBox)
             {
-                switch (send.Name)
+                box = _tabBoxes.FirstOrDefault(x => (send.Owner as ContextMenuStrip).SourceControl == x);
+                AddToStringBoxes(box);
+            }
+
+            if (box != null || !sourceIsTextBox)
+            {
+                switch (send.Text.Last())
                 {
-                    case "cItem1":
+                    case '1':
                         entries = 1;
                         break;
-                    case "cItem4":
+                    case '4':
                         entries = 4;
                         break;
-                    case "cItem8":
+                    case '8':
                         entries = 8;
                         break;
-                    case "cItem16":
+                    case '6':
                         entries = 16;
                         break;
-                    case "cItemX":
-                        AddXToTab(box);
+                    case 'X':
+                        if (sourceIsTextBox)
+                            AddXToTab(box);
+                        else
+                            AddXToTab();
                         return;
                 }
                 if (entries > 0)
                 {
-                    AddToStringBoxes(box);
                     AddToTab(entries);
                     UpdateTab();
                 }
@@ -360,12 +449,11 @@ namespace TabCreator
 
         private void AddXToTab(TextBox sender)
         {
-            AddForm addx = new AddForm();
             this.Enabled = false;
-            if (addx.ShowDialog() == DialogResult.OK)
+            if (_addXForm.ShowDialog() == DialogResult.OK && _addXForm.X > 0)
             {
                 AddToStringBoxes(sender);
-                AddToTab(addx.X);
+                AddToTab(_addXForm.X);
                 UpdateTab();
             }
             this.Enabled = true;
@@ -382,14 +470,77 @@ namespace TabCreator
             this.Enabled = true;
         }
 
-        private void btnAddX_Click(object sender, EventArgs e)
+        private void timerBackspacer_Tick(object sender, EventArgs e)
         {
-            AddXToTab();
+            BackspaceTab();
+            timerBackspacer.Interval = 20;
         }
 
-        private void cItemTuning_Click(object sender, EventArgs e)
+        private void Canvas_KeyDown(object sender, KeyEventArgs e)
         {
-            ChangeTuning();
+            switch (e.KeyCode)
+            {
+                case Keys.Back:
+                    BackspaceTab();
+                    timerBackspacer.Interval = 1000;
+                    timerBackspacer.Start();
+                    break;
+                case Keys.Return:
+                    AddNewRow();
+                    break;
+            }
+        }
+
+        private void Canvas_KeyUp(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Back)
+                timerBackspacer.Stop();
+        }
+
+        private void toolStripELowString_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Return)
+            {
+                AddToTab();
+                e.Handled = e.SuppressKeyPress = true;
+            }
+
+
+        }
+
+        private void Queue_MouseEnter(object sender, EventArgs e)
+        {
+            _argbValueOfInfoLabel = 255;
+            timerFader.Start();
+        }
+
+        void _queueSheet_MouseLeave(object sender, EventArgs e)
+        {
+            timerFader.Stop();
+            label1.ForeColor = Color.White;
+        }
+
+        private void timerFader_Tick(object sender, EventArgs e)
+        {
+            if (_argbValueOfInfoLabel > 0)
+            {
+                label1.ForeColor = Color.FromArgb(_argbValueOfInfoLabel -= 15, _argbValueOfInfoLabel, _argbValueOfInfoLabel, _argbValueOfInfoLabel);
+                label1.Update();
+            }
+            else
+            {
+                timerFader.Stop();
+            }
+        }
+
+        private void textBox1_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void addToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }

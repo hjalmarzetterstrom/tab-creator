@@ -64,12 +64,8 @@ namespace TabCreator
             this.Controls.Add(this.radioSharp);
             this.Controls.Add(this.radioFlat);
             this.Controls.Add(this.radioNatural);
-            this.Location = new System.Drawing.Point(0, 0);
-            this.Name = "queueSheetPanel1";
             this.Size = new System.Drawing.Size(931, 120);
-            this.TabIndex = 0;
             this.MouseClick += new System.Windows.Forms.MouseEventHandler(this.FormSheetMusic_MouseClick);
-            this.radioSharp.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)));
             this.radioSharp.Appearance = System.Windows.Forms.Appearance.Button;
             this.radioSharp.BackgroundImage = (Image)new Bitmap(@"..\..\Images\sharp.png");
             this.radioSharp.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
@@ -77,14 +73,8 @@ namespace TabCreator
             this.radioSharp.FlatAppearance.MouseDownBackColor = System.Drawing.Color.Silver;
             this.radioSharp.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
             this.radioSharp.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.radioSharp.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.radioSharp.Location = new System.Drawing.Point(898, 70);
-            this.radioSharp.Name = "radioSharp";
+            this.radioSharp.Location = new System.Drawing.Point(900, 72);
             this.radioSharp.Size = new System.Drawing.Size(23, 23);
-            this.radioSharp.TabIndex = 30;
-            this.radioSharp.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            this.radioSharp.UseVisualStyleBackColor = true;
-            this.radioFlat.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.radioFlat.Appearance = System.Windows.Forms.Appearance.Button;
             this.radioFlat.BackgroundImage = (Image)new Bitmap(@"..\..\Images\flat.png");
             this.radioFlat.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
@@ -92,14 +82,8 @@ namespace TabCreator
             this.radioFlat.FlatAppearance.MouseDownBackColor = System.Drawing.Color.Silver;
             this.radioFlat.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
             this.radioFlat.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.radioFlat.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.radioFlat.Location = new System.Drawing.Point(900, 26);
-            this.radioFlat.Name = "radioFlat";
             this.radioFlat.Size = new System.Drawing.Size(23, 23);
-            this.radioFlat.TabIndex = 29;
-            this.radioFlat.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            this.radioFlat.UseVisualStyleBackColor = true;
-            this.radioNatural.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.radioNatural.Appearance = System.Windows.Forms.Appearance.Button;
             this.radioNatural.BackgroundImage = (Image)new Bitmap(@"..\..\Images\natural.png");
             this.radioNatural.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center;
@@ -108,27 +92,19 @@ namespace TabCreator
             this.radioNatural.FlatAppearance.MouseDownBackColor = System.Drawing.Color.Silver;
             this.radioNatural.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
             this.radioNatural.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.radioNatural.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.radioNatural.Location = new System.Drawing.Point(900, 49);
-            this.radioNatural.Name = "radioNatural";
             this.radioNatural.Size = new System.Drawing.Size(23, 23);
-            this.radioNatural.TabIndex = 28;
-            this.radioNatural.TabStop = true;
-            this.radioNatural.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            this.radioNatural.UseVisualStyleBackColor = true;
 
             notes = new List<PictureBox>();
             coordinateToY = new Dictionary<Range, int>();
             YToNote = new Dictionary<int, string>();
             YToShape = new Dictionary<Range, NoteShape>();
             accidentalToSymbol = new Dictionary<NoteAccidental, string>();
-            //NoteQueue = new List<Note>();
             NoteQueue = new Queue<Note>();
-
             nextX = 100;
             lastX = 100;
-
             possibleNotes = "E Eb Db D D# C C# Bb B Ab A A# Gb G G# F F#".Split(' ');
+
             string[] pitches = "E D C B A G F E D C B A G F E D C B A G F E".Split(' ');
             for (int coordinate = 10, i = 0; coordinate <= 115; coordinate += 5, i++)
             {
@@ -145,7 +121,7 @@ namespace TabCreator
             accidentalToSymbol.Add(NoteAccidental.Flat, "b");
             accidentalToSymbol.Add(NoteAccidental.Natural, "");
 
-            CurrentNoteChanged += ((sender, e) => System.Diagnostics.Debug.Print(e.Pitch));
+            CurrentNoteChanged += ((sender, e) => System.Diagnostics.Debug.Print(this.Name + ": Current note changed to " + e.Pitch));
         }
 
         private void FormSheetMusic_MouseClick(object sender, MouseEventArgs e)
