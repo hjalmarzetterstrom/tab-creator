@@ -15,10 +15,24 @@ namespace TabCreator
         private Dictionary<string, Sort> _toSortEnum;
         private Sort _currentSorting;
         private AddForm _addXForm;
+        private QueueSheetPanel _queueSheet;
+        private string _currentNote;
 
         public TabForm()
         {
             InitializeComponent();
+            InitializeMoreComponents();
+        }
+
+        private void InitializeMoreComponents()
+        {
+            SheetPlaceHolder.Dispose();
+            _queueSheet = new QueueSheetPanel();
+            _queueSheet.Location = new System.Drawing.Point(6, 233);
+            _queueSheet.BorderStyle = BorderStyle.FixedSingle;
+            _queueSheet.Anchor = ((AnchorStyles)(AnchorStyles.Bottom | AnchorStyles.Left));
+            _queueSheet.CurrentNoteChanged += queueSheet_CurrentNoteChanged;
+            tabGenerateTab.Controls.Add(_queueSheet);
 
             _tuning = new string[] { "e", "B", "G", "D", "A", "E" };
             _sheet = new Sheet(_tuning);
@@ -56,6 +70,13 @@ namespace TabCreator
             };
         }
 
+        void queueSheet_CurrentNoteChanged(object sender, NoteEventArgs e)
+        {
+            _currentNote = e.Pitch;
+            LoadTabs(_currentSorting);
+            listNotes.SelectedItem = null;
+        }
+
         private void btnAdd_Click(object sender, EventArgs e)
         {
             AddToTab();
@@ -65,12 +86,18 @@ namespace TabCreator
         {
             _sheet.AddTab((int)numSpace.Value, ReadStringsAndFrets());
             UpdateTab();
+
+            if (listNotes.SelectedItem == null && _queueSheet.NoteQueue.Any())
+                _queueSheet.DequeueNote();
         }
 
         private void AddToTab(int numberOfEntries)
         {
             _sheet.AddTab((int)numSpace.Value, numberOfEntries, ReadStringsAndFrets());
             UpdateTab();
+
+            if (listNotes.SelectedItem == null && _queueSheet.NoteQueue.Any())
+                _queueSheet.DequeueNote();
         }
 
         private void UpdateTab()
@@ -135,17 +162,23 @@ namespace TabCreator
 
         private void listNotes_SelectedIndexChanged(object sender, EventArgs e)
         {
-            tableLayoutPanel1.Enabled = true;
-            radioOctaves.Enabled = true;
-            radioFrets.Enabled = true;
-            radioStrings.Enabled = true;
-            LoadTabs(_currentSorting);
+            if ((sender as ListBox).SelectedItem != null)
+            {
+                tableLayoutPanel1.Enabled = true;
+                radioOctaves.Enabled = true;
+                radioFrets.Enabled = true;
+                radioStrings.Enabled = true;
+                _currentNote = listNotes.SelectedItem.ToString();
+                LoadTabs(_currentSorting);
+            }
         }
 
         private void LoadTabs(Sort sort)
         {
+            EnableTabControls();
+
             TabNote[] notes;
-            List<TabulatureRow> generatedtabs = _sheet.GenerateFromNote(listNotes.SelectedItem.ToString(), sort, out notes);
+            var generatedtabs = _sheet.GenerateFromNote(_currentNote, sort, out notes);
 
             int minFret = 1;
             int maxFret = 24;
@@ -159,6 +192,11 @@ namespace TabCreator
                 box.Visible = false;
             }
 
+            UpdateTabOptions(notes, generatedtabs, minFret, maxFret);
+        }
+
+        private void UpdateTabOptions(TabNote[] notes, List<TabulatureRow> generatedtabs, int minFret, int maxFret)
+        {
             for (int i = 0, j = 0; i < generatedtabs.Count; i++)
             {
                 int currentFret = int.Parse(notes[i].Input);
@@ -176,6 +214,14 @@ namespace TabCreator
             }
         }
 
+        private void EnableTabControls()
+        {
+            tableLayoutPanel1.Enabled = true;
+            radioOctaves.Enabled = true;
+            radioFrets.Enabled = true;
+            radioStrings.Enabled = true;
+        }
+
         private void textBox_MouseClick(object sender, MouseEventArgs e)
         {
             var send = sender as TextBox;
@@ -184,6 +230,7 @@ namespace TabCreator
 
             if (chDirectAdd.Checked)
                 AddToTab();
+
         }
 
         private void AddToStringBoxes(TextBox sender)
@@ -227,32 +274,34 @@ namespace TabCreator
             }
         }
 
-        private void cItemSave_Click(object sender, EventArgs e)
+        private void cItemCanvas_Click(object sender, EventArgs e)
         {
-            PromptSave();
-        }
-
-        private void cItemUndo_Click(object sender, EventArgs e)
-        {
-            Undo();
-        }
-
-        private void cItemAddSplitter_Click(object sender, EventArgs e)
-        {
-            AddSplitter();
-        }
-
-        private void cItemNewRow_Click(object sender, EventArgs e)
-        {
-            AddNewRow();
-        }
-
-        private void citemClear_Click(object sender, EventArgs e)
-        {
-            if (DialogResult.Yes == MessageBox.Show("This will erase all your tabs, are you sure?\r\n\nThis action is irreversable.", "Clear canvas?", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2))
+            var send = sender as ToolStripItem;
+            switch (send.Name)
             {
-                _sheet = new Sheet(_tuning);
-                UpdateTab();
+                case "cItemClear":
+                    if (DialogResult.Yes == MessageBox.Show("This will erase all your tabs, are you sure?\r\n\nThis action is irreversable.", "Clear canvas?", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2))
+                    {
+                        _sheet = new Sheet(_tuning);
+                        UpdateTab();
+                    }
+                    break;
+                case "cItemNewRow":
+                    AddNewRow();
+                    break;
+                case "cItemAddSplitter":
+                    AddSplitter();
+                    break;
+                case "cItemUndo":
+                    Undo();
+                    break;
+                case "cItemTuning":
+                    ChangeTuning();
+                    break;
+                case "cItemSave":
+                    PromptSave();
+                    return;
+
             }
         }
 

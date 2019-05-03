@@ -7,8 +7,8 @@
     <ProjectGuid>{C13FF5C0-9176-4DA5-95A2-18656441F136}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>TabCreator_v1._0</RootNamespace>
-    <AssemblyName>TabCreator_v1.0</AssemblyName>
+    <RootNamespace>TabCreator_v2._0</RootNamespace>
+    <AssemblyName>TabCreator_v2.0</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
   </PropertyGroup>
@@ -44,6 +44,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Accidental.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="TabForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -62,9 +65,25 @@
     <Compile Include="TuningForm.Designer.cs">
       <DependentUpon>TuningForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="NotesToTab.cs" />
+    <Compile Include="SheetMusicForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SheetMusicForm.Designer.cs">
+      <DependentUpon>SheetMusicForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Note.cs" />
+    <Compile Include="NoteAccidental.cs" />
+    <Compile Include="NoteEventArgs.cs" />
+    <Compile Include="NoteShape.cs" />
+    <Compile Include="Sheet.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="QueueSheetPanel.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Sort.cs" />
+    <Compile Include="TabNote.cs" />
+    <Compile Include="TabulatureRow.cs" />
     <EmbeddedResource Include="TabForm.resx">
       <DependentUpon>TabForm.cs</DependentUpon>
     </EmbeddedResource>
@@ -74,6 +93,9 @@
     <EmbeddedResource Include="TuningForm.resx">
       <DependentUpon>TuningForm.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="SheetMusicForm.resx">
+      <DependentUpon>SheetMusicForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
@@ -82,6 +104,7 @@
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
+      <DesignTime>True</DesignTime>
     </Compile>
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
@@ -95,6 +118,16 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Images\blanksheet.png" />
+    <Content Include="Images\flat.png" />
+    <Content Include="Images\highnote.png" />
+    <Content Include="Images\lownote.png" />
+    <Content Include="Images\natural.png" />
+    <Content Include="Images\note2.png" />
+    <Content Include="Images\sharp.png" />
+    <Content Include="Images\veryhighnote.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
